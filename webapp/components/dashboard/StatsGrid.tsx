@@ -33,7 +33,7 @@ export function StatsGrid() {
         <Box value={totalDonated} label="total donated yield" className="row-span-1 col-start-0 col-end-0" />
         <Box value={yourYield} label="your yield" />
         <Box value={yourLocked} label="your locked amount" />
-        <Button onClick={() => setOpen(true)} className="col-2">donate</Button>
+        <Button className="col-2">donate</Button>
         <Button onClick={() => setOpen(true)} className="col-3">
           deposit
         </Button>
@@ -44,8 +44,8 @@ export function StatsGrid() {
           <DialogHeader>
             <DialogTitle>deposit</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            <div>
+          <div className="grid gap-4">
+            <div className="space-y-2">
               <Label htmlFor="amount">amount</Label>
               <Input
                 id="amount"
@@ -55,7 +55,7 @@ export function StatsGrid() {
                 onChange={(e) => setAmount(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="token">token</Label>
               <select
                 id="token"
