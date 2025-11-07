@@ -8,6 +8,7 @@ import { useDisconnect } from "wagmi"
 import { ProfileService, type Profile } from "@/service/ProfileService"
 import { StatsGrid } from "@/components/dashboard/StatsGrid"
 import { ProjectsSection } from "@/components/dashboard/ProjectsSection"
+import { DonationsSection } from "@/components/dashboard/DonationsSection"
 
 function shortName(addr: string) {
   if (!addr) return ""
@@ -138,6 +139,7 @@ export default function DashboardPage() {
         </section>
 
         <StatsGrid />
+        <DonationsSection />
         <ProjectsSection />
       </main>
     </div>

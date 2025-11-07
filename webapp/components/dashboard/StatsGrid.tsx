@@ -30,7 +30,9 @@ export function StatsGrid() {
 
   return (
     <section>
-      <div className="grid grid-cols-3 grid-rows-[1fr_20px] gap-4">
+      <h2 className="text-lg font-medium">stats</h2>
+
+      <div className="mt-4 grid grid-cols-3 grid-rows-[1fr_20px] gap-4">
         <Box value={totalDonated} label="total donated yield" className="row-span-1 col-start-0 col-end-0" />
         <Box value={yourYield} label="your yield" />
         <Box value={yourLocked} label="your locked amount" />
