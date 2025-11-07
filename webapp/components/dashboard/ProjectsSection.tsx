@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ProjectService, type ProjectWithOwner } from "@/service/ProjectService"
+import ReactMarkdown from "react-markdown"
 import { useAccount } from "wagmi"
 
 function ProjectCard({ p }: { p: ProjectWithOwner }) {
@@ -20,8 +21,8 @@ function ProjectCard({ p }: { p: ProjectWithOwner }) {
           </button>
         </div>
       </div>
-      <div className="mt-4 whitespace-pre-wrap text-sm text-black/90">
-        {p.description_md}
+      <div className="mt-4 text-sm text-black/90">
+        <ReactMarkdown>{p.description_md}</ReactMarkdown>
       </div>
     </div>
   )
@@ -80,6 +81,7 @@ export function ProjectsSection() {
                   onChange={(e) => setDesc(e.target.value)}
                   placeholder="what are you building and why does it matter?"
                 />
+                <div className="text-xs text-black/60">Markdown supported</div>
               </div>
             </div>
             <DialogFooter>
