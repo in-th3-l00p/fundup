@@ -1,12 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { useAccount } from "wagmi"
+import { Web3 } from "@/service/web3"
 
 function Box({ value, label, className }: { value: string; label: string; className?: string }) {
   return (
@@ -18,15 +19,37 @@ function Box({ value, label, className }: { value: string; label: string; classN
 }
 
 export function StatsGrid() {
-  // mocked values
+  const { address } = useAccount()
   const totalDonated = useMemo(() => "$12,345", [])
   const yourYield = useMemo(() => "$123.45", [])
-  const yourLocked = useMemo(() => "1,000 USDC", [])
+  const [decimals, setDecimals] = useState<number>(6)
+  const [tokenBal, setTokenBal] = useState<string>("0.00")
+  const [yourLocked, setYourLocked] = useState<string>("0.00 USDC")
 
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState("")
-  const [token, setToken] = useState("USDC")
   const [submitting, setSubmitting] = useState(false)
+
+  async function refresh() {
+    try {
+      const d = await Web3.getUsdcDecimals()
+      setDecimals(d)
+      if (address) {
+        const bal = await Web3.getUsdcBalance(address)
+        const dep = await Web3.getVaultAssets(address)
+        setTokenBal(Web3.format(bal, d))
+        setYourLocked(`${Web3.format(dep, d)} USDC`)
+      } else {
+        setTokenBal("0.00")
+        setYourLocked("0.00 USDC")
+      }
+    } catch {}
+  }
+
+  useEffect(() => {
+    refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address])
 
   return (
     <section id="stats">
@@ -37,7 +60,7 @@ export function StatsGrid() {
         <Box value={yourYield} label="your yield" />
         <Box value={yourLocked} label="your locked amount" />
         <Button className="col-2">donate</Button>
-        <Button onClick={() => setOpen(true)} className="col-3">
+        <Button onClick={() => { setOpen(true); refresh() }} className="col-3">
           deposit
         </Button>
       </div>
@@ -48,6 +71,9 @@ export function StatsGrid() {
             <DialogTitle>deposit</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
+            <div className="text-sm text-black/70">
+              balance: <span className="font-medium text-black">{tokenBal}</span> USDC
+            </div>
             <div className="space-y-2">
               <Label htmlFor="amount">amount</Label>
               <Input
@@ -60,14 +86,9 @@ export function StatsGrid() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="token">token</Label>
-              <Select value={token} onValueChange={setToken} >
-                <SelectTrigger id="token" className="w-full">
-                  <SelectValue placeholder="select token" />
-                </SelectTrigger>
-                <SelectContent className="w-full">
-                  <SelectItem value="USDC">USDC</SelectItem>
-                </SelectContent>
-              </Select>
+              <div id="token" className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm flex items-center">
+                USDC
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -76,11 +97,15 @@ export function StatsGrid() {
               className="bg-violet-600 text-white hover:bg-violet-700"
               disabled={submitting}
               onClick={async () => {
+                if (!address) return
                 setSubmitting(true)
                 try {
-                  // mock deposit
-                  console.log("deposit", { amount, token })
+                  const parsed = Web3.parse(amount, decimals)
+                  await Web3.depositToVault(address, parsed)
+                  await refresh()
                   setOpen(false)
+                } catch (e) {
+                  console.error(e)
                 } finally {
                   setSubmitting(false)
                 }

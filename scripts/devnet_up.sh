@@ -119,6 +119,8 @@ PY
     WAL_ADDRS+=("$addr")
     WAL_PKS+=("$pk")
   done
+  # also mint to deployer/default anvil account so a common wallet has USDC
+  cast send "$USDC" "mint(address,uint256)" "$ADDR" 100000000000 --rpc-url "$RPC_URL" --private-key "$PK" >/dev/null
   write_env
   echo ""
   echo "Devnet ready."

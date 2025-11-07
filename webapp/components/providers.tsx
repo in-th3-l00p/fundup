@@ -3,7 +3,7 @@
 import "@rainbow-me/rainbowkit/styles.css"
 import { RainbowKitProvider, getDefaultConfig, lightTheme } from "@rainbow-me/rainbowkit"
 import { WagmiProvider } from "wagmi"
-import { mainnet, sepolia } from "viem/chains"
+import { foundry } from "viem/chains"
 import { http } from "viem"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactNode, useMemo } from "react"
@@ -18,11 +18,10 @@ export function Providers({ children }: Props) {
       getDefaultConfig({
         appName: "fundup",
         projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo",
-        chains: [mainnet, sepolia],
+        chains: [foundry],
         ssr: true,
         transports: {
-          [mainnet.id]: http(),
-          [sepolia.id]: http(),
+          [foundry.id]: http(process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545"),
         },
       }),
     []
