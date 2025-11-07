@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {Test} from "forge-std/Test.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MintableERC20} from "../src/mocks/MintableERC20.sol";
 import {MockTwyneCreditVault} from "../src/twyne/mocks/MockTwyneCreditVault.sol";
 import {TwyneYieldDonatingStrategy} from "../src/strategy/TwyneYieldDonatingStrategy.sol";
 
@@ -45,7 +45,7 @@ contract TwyneYDSHarness is TwyneYieldDonatingStrategy {
 }
 
 contract TwyneYDSTest is Test {
-    MockERC20 usdc;
+    MintableERC20 usdc;
     MockTwyneCreditVault vault;
     TwyneYDSHarness strategy;
 
@@ -55,7 +55,7 @@ contract TwyneYDSTest is Test {
     address donation = address(0x444);
 
     function setUp() public {
-        usdc = new MockERC20("USD Coin", "USDC", 6);
+        usdc = new MintableERC20("USD Coin", "USDC", 6, address(this));
         vault = new MockTwyneCreditVault(address(usdc), 1100); // ~11% APR
 
         strategy = new TwyneYDSHarness(

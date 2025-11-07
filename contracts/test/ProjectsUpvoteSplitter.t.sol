@@ -3,11 +3,11 @@ pragma solidity ^0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {ProjectsUpvoteSplitter} from "../src/donations/ProjectsUpvoteSplitter.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MintableERC20} from "../src/mocks/MintableERC20.sol";
 
 contract ProjectsUpvoteSplitterTest is Test {
     ProjectsUpvoteSplitter splitter;
-    MockERC20 usdc;
+    MintableERC20 usdc;
 
     address owner = address(0xABCD);
     address alice = address(0xA11CE);
@@ -20,7 +20,7 @@ contract ProjectsUpvoteSplitterTest is Test {
     function setUp() public {
         vm.startPrank(owner);
         splitter = new ProjectsUpvoteSplitter(owner);
-        usdc = new MockERC20("USD Coin", "USDC", 6);
+        usdc = new MintableERC20("USD Coin", "USDC", 6, owner);
         splitter.addProject(p1);
         splitter.addProject(p2);
         splitter.addProject(p3);
@@ -29,6 +29,7 @@ contract ProjectsUpvoteSplitterTest is Test {
 
     function test_upvotes_and_distribute() public {
         // give splitter 1,000 USDC
+        vm.prank(owner);
         usdc.mint(address(splitter), 1_000e6);
 
         // votes: p1:2, p2:1, p3:0

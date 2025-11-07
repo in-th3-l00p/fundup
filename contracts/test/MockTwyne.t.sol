@@ -1,17 +1,17 @@
- // SPDX-License-Identifier: MIT
- pragma solidity ^0.8.24;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
 
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MintableERC20} from "../src/mocks/MintableERC20.sol";
 import {MockTwyneCreditVault} from "../src/twyne/mocks/MockTwyneCreditVault.sol";
 
  contract MockTwyneTest {
-     MockERC20 internal usdc;
+    MintableERC20 internal usdc;
      MockTwyneCreditVault internal creditVault;
 
      function setUp() public {
-         usdc = new MockERC20("USD Coin", "USDC", 6);
+        usdc = new MintableERC20("USD Coin", "USDC", 6, address(this));
          creditVault = new MockTwyneCreditVault(address(usdc), 1100); // ~11% APR
-         usdc.mint(address(this), 1_000_000e6);
+        usdc.mint(address(this), 1_000_000e6);
      }
 
      function test_deposit_accrue_withdraw() public {

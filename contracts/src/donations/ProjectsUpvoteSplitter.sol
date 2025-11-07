@@ -36,9 +36,7 @@ contract ProjectsUpvoteSplitter is Ownable {
     event EpochAdvanced(uint256 indexed newEpoch);
     event Distributed(address indexed token, uint256 total, uint256 indexed epoch);
 
-    constructor(address initialOwner) {
-        _transferOwnership(initialOwner);
-    }
+    constructor(address initialOwner) Ownable(initialOwner) {}
 
     function addProject(address recipient) external onlyOwner returns (uint256 id) {
         require(recipient != address(0), "recipient zero");
