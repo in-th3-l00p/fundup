@@ -20,15 +20,21 @@ function Box({ value, label, className }: { value: string; label: string; classN
 
 export function StatsGrid() {
   const { address } = useAccount()
-  const totalDonated = useMemo(() => "$12,345", [])
+  const totalDonated = useMemo(() => "$12,345.00", [])
   const yourYield = useMemo(() => "$123.45", [])
-  const [decimals, setDecimals] = useState<number>(6)
+  const [decimals, setDecimals] = useState<number>(2)
   const [tokenBal, setTokenBal] = useState<string>("0.00")
   const [yourLocked, setYourLocked] = useState<string>("0.00 USDC")
 
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState("")
   const [submitting, setSubmitting] = useState(false)
+
+  const toTwo = (s: string) =>
+    Number(isNaN(Number(s)) ? "0" : s).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
 
   async function refresh() {
     try {
@@ -37,8 +43,8 @@ export function StatsGrid() {
       if (address) {
         const bal = await Web3.getUsdcBalance(address)
         const dep = await Web3.getVaultAssets(address)
-        setTokenBal(Web3.format(bal, d))
-        setYourLocked(`${Web3.format(dep, d)} USDC`)
+        setTokenBal(toTwo(Web3.format(bal, d)))
+        setYourLocked(`${toTwo(Web3.format(dep, d))} USDC`)
       } else {
         setTokenBal("0.00")
         setYourLocked("0.00 USDC")
