@@ -125,7 +125,7 @@ export function ProjectsSection() {
       </div>
 
       {loading ? (
-        <div className="text-sm text-black/60">loading…</div>
+        <div className="text-sm text-black/60 text-center">loading…</div>
       ) : !(items && items.length) ? (
         <div className="rounded-xl border border-black/10 p-6 text-center text-sm text-black/60">no projects found</div>
       ) : (
