@@ -2,3 +2,6 @@
 artifacts
 cache
 out
+
+# Soldeer
+/dependencies

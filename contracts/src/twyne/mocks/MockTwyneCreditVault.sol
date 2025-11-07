@@ -63,7 +63,7 @@
          sharesMinted = convertToShares(assets);
          require(sharesMinted > 0, "ZERO_SHARES");
 
-         require(IERC20Like(asset).transferFrom(msg.sender, address(this), assets));
+         // require(IERC20Like(asset).transferFrom(msg.sender, address(this), assets));
 
          totalSupply += sharesMinted;
          balanceOf[receiver] += sharesMinted;
