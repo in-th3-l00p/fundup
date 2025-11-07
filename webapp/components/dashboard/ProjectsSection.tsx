@@ -9,7 +9,7 @@ import { ProjectService, type ProjectWithMeta } from "@/service/ProjectService"
 import ReactMarkdown from "react-markdown"
 import { useAccount } from "wagmi"
 
-function ProjectCard({ p, currentWallet, onUpvote, disabled }: { p: ProjectWithMeta, currentWallet?: string, onUpvote?: (id: number) => Promise<void>, disabled?: boolean }) {
+function ProjectCard({ p, currentWallet, onToggle, disabled }: { p: ProjectWithMeta, currentWallet?: string, onToggle?: (id: number, hasUpvoted: boolean) => Promise<void>, disabled?: boolean }) {
   return (
     <div className="rounded-xl border border-black/10 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -24,11 +24,16 @@ function ProjectCard({ p, currentWallet, onUpvote, disabled }: { p: ProjectWithM
         </div>
         <div className="flex items-center gap-2">
           <div className="text-sm text-black/70">{p.upvotes_count} upvote{p.upvotes_count === 1 ? "" : "s"}</div>
-          {currentWallet && p.owner_wallet_address.toLowerCase() !== currentWallet.toLowerCase() && !p.has_upvoted ? (
-            <Button size="sm" variant="outline" disabled={disabled} onClick={() => onUpvote && onUpvote(p.id)}>upvote</Button>
-          ) : null}
-          {currentWallet && p.has_upvoted ? (
-            <span className="rounded-full border border-violet-600/30 bg-violet-50 px-2 py-0.5 text-xs text-violet-700">upvoted</span>
+          {currentWallet && p.owner_wallet_address.toLowerCase() !== currentWallet.toLowerCase() ? (
+            <Button
+              size="sm"
+              variant={p.has_upvoted ? "default" : "outline"}
+              className={p.has_upvoted ? "bg-violet-600 text-white hover:bg-violet-700" : undefined}
+              disabled={disabled}
+              onClick={() => onToggle && onToggle(p.id, p.has_upvoted)}
+            >
+              {p.has_upvoted ? "unvote" : "upvote"}
+            </Button>
           ) : null}
         </div>
       </div>
@@ -153,11 +158,15 @@ export function ProjectsSection() {
               p={p}
               currentWallet={address}
               disabled={upvotingId === p.id}
-              onUpvote={async (id) => {
+              onToggle={async (id, hasUpvoted) => {
                 if (!address) return
                 setUpvotingId(id)
                 try {
-                  await ProjectService.upvoteProject(id, address)
+                  if (hasUpvoted) {
+                    await ProjectService.removeUpvote(id, address)
+                  } else {
+                    await ProjectService.upvoteProject(id, address)
+                  }
                   await refresh()
                 } finally {
                   setUpvotingId(null)

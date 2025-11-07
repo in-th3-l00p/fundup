@@ -94,6 +94,16 @@ export namespace ProjectService {
     // ignore duplicate upvotes (unique constraint)
     if (error && error.code !== "23505") throw error
   }
+
+  export async function removeUpvote(projectId: number, voterWallet: string): Promise<void> {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("project_upvotes")
+      .delete()
+      .eq("project_id", projectId)
+      .eq("voter_wallet_address", voterWallet.toLowerCase())
+    if (error) throw error
+  }
 }
 
 
