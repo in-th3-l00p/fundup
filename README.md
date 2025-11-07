@@ -7,7 +7,7 @@ deposit once. keep principal. route yield to public goods chosen by capital‑we
 - octant v2 erc‑4626 vault + yield‑donating strategy pattern
 - twyne credit delegation (~11% apy target), simulated for dev
 - next.js + typescript + wagmi + viem + rainbowkit
-- tailwind ofc
+- tailwind & shadcn 4 ui
 
 ### features
 - erc‑4626 deposits/withdrawals (users hold principal)
