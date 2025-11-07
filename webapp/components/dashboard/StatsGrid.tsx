@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 function Box({ value, label, className }: { value: string; label: string; className?: string }) {
@@ -57,14 +58,14 @@ export function StatsGrid() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="token">token</Label>
-              <select
-                id="token"
-                className="h-10 w-full rounded-md border border-black/15 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-              >
-                <option value="USDC">USDC</option>
-              </select>
+              <Select value={token} onValueChange={setToken} >
+                <SelectTrigger id="token" className="w-full">
+                  <SelectValue placeholder="select token" />
+                </SelectTrigger>
+                <SelectContent className="w-full">
+                  <SelectItem value="USDC">USDC</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
