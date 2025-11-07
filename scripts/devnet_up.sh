@@ -69,22 +69,35 @@ deploy() {
 
 write_env() {
   mkdir -p "$WEBAPP"
-  echo "Writing $ENV_FILE"
-  {
-    echo "NEXT_PUBLIC_RPC_URL=$RPC_URL"
-    echo "NEXT_PUBLIC_CHAIN_ID=$CHAIN_ID"
-    echo "NEXT_PUBLIC_USDC=$USDC"
-    echo "NEXT_PUBLIC_TWYNE_VAULT=$TWYNE_VAULT"
-    echo "NEXT_PUBLIC_YDS_STRATEGY=$STRATEGY"
-    echo "NEXT_PUBLIC_DONATION_SPLITTER=$SPLITTER"
-    # test wallets (pre-funded + minted)
-    echo "TEST_WALLET1_ADDRESS=${WAL_ADDRS[0]}"
-    echo "TEST_WALLET1_PRIVATE_KEY=${WAL_PKS[0]}"
-    echo "TEST_WALLET2_ADDRESS=${WAL_ADDRS[1]}"
-    echo "TEST_WALLET2_PRIVATE_KEY=${WAL_PKS[1]}"
-    echo "TEST_WALLET3_ADDRESS=${WAL_ADDRS[2]}"
-    echo "TEST_WALLET3_PRIVATE_KEY=${WAL_PKS[2]}"
-  } > "$ENV_FILE"
+  touch "$ENV_FILE"
+  echo "Updating $ENV_FILE"
+
+  set_kv() {
+    # set_kv KEY VALUE  (replace line starting with KEY=... or append if missing)
+    local key="$1"
+    local val="$2"
+    awk -v k="$key" -v v="$val" '
+      BEGIN { done=0 }
+      # Replace first occurrence of the key
+      $0 ~ ("^" k "=") && done==0 { print k "=" v; done=1; next }
+      { print }
+      END { if (done==0) print k "=" v }
+    ' "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
+  }
+
+  set_kv "NEXT_PUBLIC_RPC_URL" "$RPC_URL"
+  set_kv "NEXT_PUBLIC_CHAIN_ID" "$CHAIN_ID"
+  set_kv "NEXT_PUBLIC_USDC" "$USDC"
+  set_kv "NEXT_PUBLIC_TWYNE_VAULT" "$TWYNE_VAULT"
+  set_kv "NEXT_PUBLIC_YDS_STRATEGY" "$STRATEGY"
+  set_kv "NEXT_PUBLIC_DONATION_SPLITTER" "$SPLITTER"
+  # test wallets (pre-funded + minted)
+  set_kv "TEST_WALLET1_ADDRESS" "${WAL_ADDRS[0]}"
+  set_kv "TEST_WALLET1_PRIVATE_KEY" "${WAL_PKS[0]}"
+  set_kv "TEST_WALLET2_ADDRESS" "${WAL_ADDRS[1]}"
+  set_kv "TEST_WALLET2_PRIVATE_KEY" "${WAL_PKS[1]}"
+  set_kv "TEST_WALLET3_ADDRESS" "${WAL_ADDRS[2]}"
+  set_kv "TEST_WALLET3_PRIVATE_KEY" "${WAL_PKS[2]}"
 }
 
 main() {
