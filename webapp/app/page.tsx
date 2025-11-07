@@ -30,9 +30,17 @@ export default function Home() {
           deposit once. keep principal. route yield to public goods.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">
-          <Button className="bg-violet-600 hover:bg-violet-700">
-            <ConnectButton label="connect wallet" />
-          </Button>
+          <ConnectButton.Custom>
+            {({ mounted, account, openConnectModal }) => {
+              const connected = mounted && account
+              if (connected) return null
+              return (
+                <Button className="bg-violet-600 hover:bg-violet-700" onClick={openConnectModal}>
+                  connect wallet
+                </Button>
+              )
+            }}
+          </ConnectButton.Custom>
         </div>
       </main>
     </div>
