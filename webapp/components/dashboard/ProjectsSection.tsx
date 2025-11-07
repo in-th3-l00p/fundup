@@ -5,20 +5,31 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ProjectService, type ProjectWithOwner } from "@/service/ProjectService"
+import { ProjectService, type ProjectWithMeta } from "@/service/ProjectService"
 import ReactMarkdown from "react-markdown"
 import { useAccount } from "wagmi"
 
-function ProjectCard({ p }: { p: ProjectWithOwner }) {
+function ProjectCard({ p, currentWallet, onUpvote, disabled }: { p: ProjectWithMeta, currentWallet?: string, onUpvote?: (id: number) => Promise<void>, disabled?: boolean }) {
   return (
     <div className="rounded-xl border border-black/10 p-4">
-      <div className="flex items-center gap-2">
-        <div className="text-lg font-semibold">{p.name}</div>
-        <div className="text-sm text-black/70">
-          by {" "}
-          <button className="underline underline-offset-4">
-            {p.owner?.display_name ?? p.owner_wallet_address.slice(0, 6) + "…" + p.owner_wallet_address.slice(-4)}
-          </button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-lg font-semibold">{p.name}</div>
+          <div className="text-sm text-black/70">
+            by {" "}
+            <button className="underline underline-offset-4">
+              {p.owner?.display_name ?? p.owner_wallet_address.slice(0, 6) + "…" + p.owner_wallet_address.slice(-4)}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-black/70">{p.upvotes_count} upvote{p.upvotes_count === 1 ? "" : "s"}</div>
+          {currentWallet && p.owner_wallet_address.toLowerCase() !== currentWallet.toLowerCase() && !p.has_upvoted ? (
+            <Button size="sm" variant="outline" disabled={disabled} onClick={() => onUpvote && onUpvote(p.id)}>upvote</Button>
+          ) : null}
+          {currentWallet && p.has_upvoted ? (
+            <span className="rounded-full border border-violet-600/30 bg-violet-50 px-2 py-0.5 text-xs text-violet-700">upvoted</span>
+          ) : null}
         </div>
       </div>
       <div className="mt-4 text-sm text-black/90">
@@ -35,13 +46,19 @@ export function ProjectsSection() {
   const [name, setName] = useState("")
   const [desc, setDesc] = useState("")
   const [search, setSearch] = useState("")
-  const [items, setItems] = useState<ProjectWithOwner[] | null>(null)
+  const [items, setItems] = useState<ProjectWithMeta[] | null>(null)
   const [loading, setLoading] = useState(true)
+  const [upvotingId, setUpvotingId] = useState<number | null>(null)
 
   async function refresh() {
     setLoading(true)
     try {
-      const rows = await ProjectService.listProjects(search)
+      const rows = await ProjectService.listProjects(search, address)
+      if (rows && rows.length > 1) {
+        const rnd = Math.floor(Math.random() * rows.length)
+        const [rand] = rows.splice(rnd, 1)
+        rows.unshift(rand)
+      }
       setItems(rows)
     } finally {
       setLoading(false)
@@ -131,7 +148,22 @@ export function ProjectsSection() {
       ) : (
         <div className="grid gap-3">
           {items.map((p) => (
-            <ProjectCard key={p.id} p={p} />
+            <ProjectCard
+              key={p.id}
+              p={p}
+              currentWallet={address}
+              disabled={upvotingId === p.id}
+              onUpvote={async (id) => {
+                if (!address) return
+                setUpvotingId(id)
+                try {
+                  await ProjectService.upvoteProject(id, address)
+                  await refresh()
+                } finally {
+                  setUpvotingId(null)
+                }
+              }}
+            />
           ))}
         </div>
       )}
