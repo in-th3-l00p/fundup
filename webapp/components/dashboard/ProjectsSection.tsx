@@ -195,7 +195,7 @@ export function ProjectsSection() {
   }, [items, showMineOnly, address])
 
   return (
-    <section className="space-y-4">
+    <section id="projects" className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium">projects</h2>
         <Dialog open={open} onOpenChange={setOpen}>

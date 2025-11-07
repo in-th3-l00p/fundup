@@ -29,7 +29,7 @@ export function StatsGrid() {
   const [submitting, setSubmitting] = useState(false)
 
   return (
-    <section>
+    <section id="stats">
       <h2 className="text-lg font-medium">stats</h2>
 
       <div className="mt-4 grid grid-cols-3 grid-rows-[1fr_20px] gap-4">

@@ -49,7 +49,7 @@ export function DonationsSection() {
   const [withdrawing, setWithdrawing] = useState(false)
 
   return (
-    <section className="space-y-4">
+    <section id="donations" className="space-y-4">
       <h2 className="text-lg font-medium">donations split</h2>
       <div className="rounded-xl border border-black/10 p-4 space-y-3">
         {loading ? (
