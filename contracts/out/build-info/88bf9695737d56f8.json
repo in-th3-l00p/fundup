@@ -1,0 +1,1 @@
+{"id":"88bf9695737d56f8","source_id_to_path":{"0":"src/mocks/MockERC20.sol","1":"src/twyne/interfaces/ICreditVault.sol","2":"src/twyne/interfaces/IVaultManager.sol","3":"src/twyne/mocks/MockTwyneCreditVault.sol","4":"src/twyne/mocks/MockTwyneVaultManager.sol","5":"test/MockTwyne.t.sol"},"language":"Solidity"}
