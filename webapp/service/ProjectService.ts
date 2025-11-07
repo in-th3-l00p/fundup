@@ -104,6 +104,27 @@ export namespace ProjectService {
       .eq("voter_wallet_address", voterWallet.toLowerCase())
     if (error) throw error
   }
+
+  export async function updateProject(projectId: number, updates: { name?: string; description_md?: string }): Promise<Project> {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("projects")
+      .update({ ...updates })
+      .eq("id", projectId)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Project
+  }
+
+  export async function deleteProject(projectId: number): Promise<void> {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", projectId)
+    if (error) throw error
+  }
 }
 
 
