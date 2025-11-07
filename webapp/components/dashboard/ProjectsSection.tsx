@@ -9,13 +9,14 @@ import { ProjectService, type ProjectWithMeta } from "@/service/ProjectService"
 import ReactMarkdown from "react-markdown"
 import { useAccount } from "wagmi"
 
-function ProjectCard({ p, currentWallet, onToggle, disabled, onChanged }: { p: ProjectWithMeta, currentWallet?: string, onToggle?: (id: number, hasUpvoted: boolean) => Promise<void>, disabled?: boolean, onChanged?: () => Promise<void> | void }) {
+function ProjectCard({ p, currentWallet, earnedUsd = 0, onToggle, disabled, onChanged }: { p: ProjectWithMeta, currentWallet?: string, earnedUsd?: number, onToggle?: (id: number, hasUpvoted: boolean) => Promise<void>, disabled?: boolean, onChanged?: () => Promise<void> | void }) {
   const isOwner = !!currentWallet && p.owner_wallet_address.toLowerCase() === currentWallet.toLowerCase()
   const [editOpen, setEditOpen] = useState(false)
   const [editName, setEditName] = useState(p.name)
   const [editDesc, setEditDesc] = useState(p.description_md)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
   const canSave = editName.trim().length > 0 && editDesc.trim().length > 0
 
   return (
@@ -53,9 +54,30 @@ function ProjectCard({ p, currentWallet, onToggle, disabled, onChanged }: { p: P
           )}
         </div>
       </div>
-      <div className="mt-4 text-sm text-black/90">
+       <div className="mt-4 text-sm text-black/90">
         <ReactMarkdown>{p.description_md}</ReactMarkdown>
       </div>
+       {isOwner ? (
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-sm text-black/70">earned: <span className="font-medium text-black">{'$'}{earnedUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+           <Button
+             size="sm"
+             className="bg-violet-600 text-white hover:bg-violet-700"
+             disabled={withdrawing || earnedUsd <= 0}
+             onClick={async () => {
+               setWithdrawing(true)
+               try {
+                 // mock withdraw for this project
+                 console.log("withdraw-project", { id: p.id, amount: earnedUsd })
+               } finally {
+                 setWithdrawing(false)
+               }
+             }}
+           >
+             {withdrawing ? "withdrawing…" : "withdraw"}
+           </Button>
+         </div>
+       ) : null}
 
       {isOwner ? (
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -132,17 +154,28 @@ export function ProjectsSection() {
   const [items, setItems] = useState<ProjectWithMeta[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [upvotingId, setUpvotingId] = useState<number | null>(null)
+  const [amountsById, setAmountsById] = useState<Record<number, number>>({})
+  const [showMineOnly, setShowMineOnly] = useState(false)
 
   async function refresh() {
     setLoading(true)
     try {
       const rows = await ProjectService.listProjects(search, address)
-      if (rows && rows.length > 1) {
-        const rnd = Math.floor(Math.random() * rows.length)
-        const [rand] = rows.splice(rnd, 1)
-        rows.unshift(rand)
+      // sort by upvotes desc
+      rows.sort((a, b) => (b.upvotes_count || 0) - (a.upvotes_count || 0))
+      // randomize the first item via swap with a random index (no duplicates)
+      if (rows.length > 1) {
+        const rnd = 1 + Math.floor(Math.random() * (rows.length - 1))
+        const tmp = rows[0]
+        rows[0] = rows[rnd]
+        rows[rnd] = tmp
       }
       setItems(rows)
+      // assign mock amounts (same logic as donations section)
+      const base = [4200, 3000, 1800, 900, 500]
+      const m: Record<number, number> = {}
+      rows.slice(0, 5).forEach((p, i) => { m[p.id] = base[i] || 0 })
+      setAmountsById(m)
     } finally {
       setLoading(false)
     }
@@ -154,6 +187,12 @@ export function ProjectsSection() {
   }, [])
 
   const canCreate = useMemo(() => !!address && name.trim().length > 0 && desc.trim().length > 0, [address, name, desc])
+  const visibleItems = useMemo(() => {
+    const arr = items || []
+    if (!showMineOnly || !address) return arr
+    const me = address.toLowerCase()
+    return arr.filter((p) => p.owner_wallet_address.toLowerCase() === me)
+  }, [items, showMineOnly, address])
 
   return (
     <section className="space-y-4">
@@ -222,19 +261,29 @@ export function ProjectsSection() {
           }}
         />
         <Button variant="outline" onClick={refresh}>search</Button>
+        <label className="ml-auto flex items-center gap-2 text-sm text-black/70">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border border-black/30 accent-violet-600"
+            checked={showMineOnly}
+            onChange={(e) => setShowMineOnly(e.target.checked)}
+          />
+          mine only
+        </label>
       </div>
 
       {loading ? (
         <div className="text-sm text-black/60 text-center">loading…</div>
-      ) : !(items && items.length) ? (
-        <div className="rounded-xl border border-black/10 p-6 text-center text-sm text-black/60">no projects found</div>
+      ) : !(visibleItems && visibleItems.length) ? (
+        <div className="rounded-xl border border-black/10 p-6 text-center text-sm text-black/60">{showMineOnly ? "no owned projects" : "no projects found"}</div>
       ) : (
         <div className="grid gap-3">
-          {items.map((p) => (
+          {visibleItems.map((p) => (
             <ProjectCard
               key={p.id}
               p={p}
               currentWallet={address}
+              earnedUsd={amountsById[p.id] || 0}
               disabled={upvotingId === p.id}
               onChanged={refresh}
               onToggle={async (id, hasUpvoted) => {

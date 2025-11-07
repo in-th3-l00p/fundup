@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { ProjectService, type ProjectWithMeta } from "@/service/ProjectService"
+import { Button } from "@/components/ui/button"
 import { useAccount } from "wagmi"
 import { cn } from "@/lib/utils"
 
@@ -45,6 +46,8 @@ export function DonationsSection() {
     return { sum: subset.reduce((s, e) => s + e.amountUsd, 0), count: subset.length }
   }, [splits, address])
 
+  const [withdrawing, setWithdrawing] = useState(false)
+
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-medium">donations split</h2>
@@ -76,8 +79,27 @@ export function DonationsSection() {
       </div>
 
       <div className="rounded-xl border border-black/10 p-4 space-y-2">
-        <div className="text-sm text-black/70">you received</div>
-        <div className="text-2xl font-semibold">{formatUsd(you.sum)} <span className="text-base font-normal text-black/60">across {you.count} project{you.count === 1 ? "" : "s"}</span></div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm text-black/70">you received</div>
+            <div className="text-2xl font-semibold">{formatUsd(you.sum)} <span className="text-base font-normal text-black/60">across {you.count} project{you.count === 1 ? "" : "s"}</span></div>
+          </div>
+          <Button
+            className="bg-violet-600 text-white hover:bg-violet-700"
+            disabled={withdrawing || you.sum <= 0}
+            onClick={async () => {
+              setWithdrawing(true)
+              try {
+                // mock withdraw all donations to your projects
+                console.log("withdraw-all", { total: you.sum })
+              } finally {
+                setWithdrawing(false)
+              }
+            }}
+          >
+            {withdrawing ? "withdrawing…" : "withdraw"}
+          </Button>
+        </div>
         {!loading && splits.length ? (
           <div className="mt-2 grid gap-2">
             {splits.map((e) => (
