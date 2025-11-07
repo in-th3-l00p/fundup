@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useDisconnect } from "wagmi"
 import { ProfileService, type Profile } from "@/service/ProfileService"
+import { StatsGrid } from "@/components/dashboard/StatsGrid"
 
 function shortName(addr: string) {
   if (!addr) return ""
@@ -51,8 +52,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-white text-black">
-      <main className="w-full max-w-2xl px-6">
+    <div className="w-screen min-h-screen flex items-center justify-center bg-white text-black">
+      <main className="w-full max-w-2xl px-6 space-y-16">
         <h1 className="text-4xl font-semibold tracking-tight text-center">dashboard</h1>
         <section className="mt-8 border border-black/10 rounded-xl p-4">
           <div className="flex items-center justify-between gap-2">
@@ -134,6 +135,8 @@ export default function DashboardPage() {
             )}
           </div>
         </section>
+
+        <StatsGrid />
       </main>
     </div>
   )
