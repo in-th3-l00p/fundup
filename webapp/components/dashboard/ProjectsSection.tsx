@@ -73,7 +73,7 @@ export function ProjectsSection() {
                 <Input id="pname" value={name} onChange={(e) => setName(e.target.value)} placeholder="my awesome public good" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pdesc">description (markdown)</Label>
+                <Label htmlFor="pdesc">description</Label>
                 <textarea
                   id="pdesc"
                   className="min-h-32 w-full rounded-md border border-black/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600"

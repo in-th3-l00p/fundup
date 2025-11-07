@@ -54,7 +54,7 @@ export default function DashboardPage() {
 
   return (
     <div className="w-screen min-h-screen flex items-center justify-center bg-white text-black">
-      <main className="w-full max-w-2xl px-6 space-y-16">
+      <main className="w-full max-w-2xl px-6 space-y-16 py-32">
         <h1 className="text-4xl font-semibold tracking-tight text-center">dashboard</h1>
         <section className="mt-8 border border-black/10 rounded-xl p-4">
           <div className="flex items-center justify-between gap-2">
