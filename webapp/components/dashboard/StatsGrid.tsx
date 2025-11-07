@@ -65,7 +65,7 @@ export function StatsGrid() {
         </Button>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setAmount(""); refresh() } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>deposit</DialogTitle>
@@ -95,7 +95,7 @@ export function StatsGrid() {
             <Button variant="outline" onClick={() => setOpen(false)}>cancel</Button>
             <Button
               className="bg-violet-600 text-white hover:bg-violet-700"
-              disabled={submitting}
+              disabled={submitting || !address || !amount || Number(amount) <= 0}
               onClick={async () => {
                 if (!address) return
                 setSubmitting(true)
@@ -104,6 +104,7 @@ export function StatsGrid() {
                   await Web3.depositToVault(address, parsed)
                   await refresh()
                   setOpen(false)
+                  setAmount("")
                 } catch (e) {
                   console.error(e)
                 } finally {

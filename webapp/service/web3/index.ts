@@ -54,14 +54,14 @@ export const Web3 = {
     const allowance = await pc.readContract({ address: USDC, abi: erc20Abi, functionName: "allowance", args: [user, spender] })
     if (allowance >= amount) return
     const wc = await walletClient()
-    const hash = await wc.writeContract({ address: USDC, abi: erc20Abi, functionName: "approve", args: [spender, amount] })
+    const hash = await wc.writeContract({ account: user, address: USDC, abi: erc20Abi, functionName: "approve", args: [spender, amount] })
     await pc.waitForTransactionReceipt({ hash })
   },
   async depositToVault(user: Address, assets: bigint) {
     const pc = publicClient()
     const wc = await walletClient()
     await Web3.approveUsdcIfNeeded(user, TWYNE_VAULT, assets)
-    const hash = await wc.writeContract({ address: TWYNE_VAULT, abi: vaultAbi, functionName: "deposit", args: [assets, user] })
+    const hash = await wc.writeContract({ account: user, address: TWYNE_VAULT, abi: vaultAbi, functionName: "deposit", args: [assets, user] })
     await pc.waitForTransactionReceipt({ hash })
   },
   format(amount: bigint, decimals: number) {
