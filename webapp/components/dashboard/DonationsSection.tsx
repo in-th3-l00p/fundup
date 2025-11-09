@@ -31,10 +31,12 @@ export function DonationsSection() {
 
   const splits = useMemo<SplitEntry[]>(() => {
     const rows = projects || []
-    // pick up to 5 projects deterministically and assign mock amounts
-    const base = [4200, 3000, 1800, 900, 500]
-    const picked = rows.slice(0, 5).map((p, i) => ({ id: p.id, name: p.name, amountUsd: base[i] || 0, owner: p.owner_wallet_address }))
-    return picked
+    return rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      amountUsd: Number((p as any).donated_amount_usd || 0),
+      owner: p.owner_wallet_address
+    }))
   }, [projects])
 
   const total = useMemo(() => splits.reduce((s, e) => s + e.amountUsd, 0), [splits])
@@ -90,8 +92,10 @@ export function DonationsSection() {
             onClick={async () => {
               setWithdrawing(true)
               try {
-                // mock withdraw all donations to your projects
-                console.log("withdraw-all", { total: you.sum })
+                await ProjectService.withdrawAllForOwner(address!)
+                // refresh local view
+                const rows = await ProjectService.listProjects(undefined, address)
+                setProjects(rows)
               } finally {
                 setWithdrawing(false)
               }

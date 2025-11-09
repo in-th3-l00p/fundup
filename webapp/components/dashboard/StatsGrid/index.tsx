@@ -6,10 +6,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAccount } from "wagmi"
-import { Web3 } from "@/service/web3"
+import { MockChain } from "@/service/mock"
 import { TotalDonated } from "./TotalDonated"
 import { YourYield } from "./YourYield"
 import { YourLocked } from "./YourLocked"
+import { ProjectService } from "@/service/ProjectService"
+import { YieldService } from "@/service/YieldService"
 
 export function StatsGrid() {
   const { address } = useAccount()
@@ -34,29 +36,27 @@ export function StatsGrid() {
 
   async function refresh() {
     try {
-      const d = await Web3.usdc.getDecimals()
+      const d = await MockChain.usdc.getDecimals()
       setDecimals(d)
-      // total donated = USDC balance held by donation splitter
-      const donated = await Web3.splitter.getUsdcBalance()
-      setTotalDonated(`$${toTwo(Web3.format(donated, d))}`)
+      // total donated = sum over projects.donated_amount_usd (supabase)
+      const donatedUsd = await ProjectService.getTotalDonatedUsd()
+      setTotalDonated(`$${toTwo(String(donatedUsd))}`)
       if (address) {
-        const bal = await Web3.usdc.getBalance(address)
-        const dep = await Web3.vault.getAssets(address)
-        setTokenBal(toTwo(Web3.format(bal, d)))
-        setYourLocked(`${toTwo(Web3.format(dep, d))} USDC`)
-        // your yield = current assets - principal (tracked in localStorage per address)
-        const key = `principal:${address.toLowerCase()}`
-        const principalStr = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
-        const principal = BigInt(principalStr)
-        const yieldNow = dep > principal ? dep - principal : BigInt(0)
-        setYourYield(`$${toTwo(Web3.format(yieldNow, d))}`)
+        const bal = await MockChain.usdc.getBalance(address)
+        const dep = await MockChain.vault.getAssets(address)
+        setTokenBal(toTwo(MockChain.format(bal, d)))
+        // locked is principal deposited (mock: equals vault assets since yield is tracked separately)
+        setYourLocked(`${toTwo(MockChain.format(dep, d))} USDC`)
+        // your yield is tracked in Supabase (USD)
+        const yUsd = await YieldService.get(address)
+        setYourYield(`$${toTwo(String(yUsd))}`)
       } else {
         setTokenBal("0.00")
         setYourLocked("0.00 USDC")
         setYourYield("$0.00")
       }
       // refresh projects list for donation modal
-      const list = await Web3.splitter.listProjects()
+      const list = await MockChain.splitter.listProjects()
       setProjects(list.filter(p => p.active))
     } catch {}
   }
@@ -74,6 +74,20 @@ export function StatsGrid() {
         <TotalDonated value={totalDonated} />
         <YourYield value={yourYield} />
         <YourLocked value={yourLocked} />
+        <Button
+          variant="outline"
+          onClick={async () => {
+            if (!address) return
+            // simulate 1 year of 11% APY on current locked (in USD) and add to Supabase yield
+            const dep = await MockChain.vault.getAssets(address)
+            const depUsd = Number(dep) / 1e6
+            const gainUsd = Math.floor((depUsd * 0.11) * 100) / 100
+            await YieldService.add(address, gainUsd)
+            await refresh()
+          }}
+        >
+          1 year
+        </Button>
         <Button className="col-2" onClick={() => { setDonateOpen(true); refresh() }}>donate</Button>
         <Button onClick={() => { setOpen(true); refresh() }} className="col-3">
           deposit
@@ -120,19 +134,41 @@ export function StatsGrid() {
                 if (!address) return
                 setDonating(true)
                 try {
-                  // compute current yield in base units
-                  const d = await Web3.usdc.getDecimals()
-                  const dep = await Web3.vault.getAssets(address!)
-                  const key = `principal:${address.toLowerCase()}`
-                  const principalStr = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
-                  const principal = BigInt(principalStr)
-                  const yieldNow = dep > principal ? dep - principal : BigInt(0)
-                  if (yieldNow > BigInt(0)) {
-                    // transfer yield to donation splitter and distribute
-                    await Web3.usdc.transfer(address!, Web3.addresses.donationSplitter, yieldNow)
-                    await Web3.splitter.distribute()
-                    // reset principal to current assets after donating yield
-                    if (typeof window !== "undefined") window.localStorage.setItem(key, dep.toString())
+                  // donate entire current yield (USD) using vote weights
+                  const yUsd = await YieldService.get(address)
+                  if (yUsd > 0) {
+                    const projs = await ProjectService.listProjects(undefined, address)
+                    const totalVotes = projs.reduce((s, p) => s + (p.upvotes_count || 0), 0)
+                    let remaining = yUsd
+                    const splits: Array<{ id: number; amountUsd: number }> = []
+                    if (projs.length > 0) {
+                      if (totalVotes === 0) {
+                        // split equally across all projects
+                        const per = Math.floor((yUsd / projs.length) * 100) / 100
+                        for (let i = 0; i < projs.length; i++) {
+                          if (i === projs.length - 1) {
+                            splits.push({ id: projs[i].id, amountUsd: Math.max(0, Math.floor(remaining * 100) / 100) })
+                          } else {
+                            remaining -= per
+                            splits.push({ id: projs[i].id, amountUsd: per })
+                          }
+                        }
+                      } else {
+                        for (let i = 0; i < projs.length; i++) {
+                          const p = projs[i]
+                          if (i === projs.length - 1) {
+                            splits.push({ id: p.id, amountUsd: Math.max(0, Math.floor(remaining * 100) / 100) })
+                          } else {
+                            const amt = ((p.upvotes_count || 0) / totalVotes) * yUsd
+                            const rounded = Math.floor(amt * 100) / 100
+                            remaining -= rounded
+                            if (rounded > 0) splits.push({ id: p.id, amountUsd: rounded })
+                          }
+                        }
+                      }
+                      await ProjectService.addDonationsToProjectsSplits(splits)
+                      await YieldService.consume(address, yUsd)
+                    }
                   }
                   await refresh()
                   setDonateOpen(false)
@@ -184,8 +220,8 @@ export function StatsGrid() {
                 if (!address) return
                 setSubmitting(true)
                 try {
-                  const parsed = Web3.parse(amount, decimals)
-                  await Web3.vault.deposit(address, parsed)
+                  const parsed = MockChain.parse(amount, decimals)
+                  await MockChain.vault.deposit(address, parsed)
                   // bump principal tracker
                   const key = `principal:${address.toLowerCase()}`
                   const prev = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"

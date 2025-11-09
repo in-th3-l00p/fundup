@@ -26,20 +26,9 @@ export function ProjectsSection() {
     setLoading(true)
     try {
       const rows = await ProjectService.listProjects(search, address)
-      // sort by upvotes desc
-      rows.sort((a, b) => (b.upvotes_count || 0) - (a.upvotes_count || 0))
-      // randomize the first item via swap with a random index (no duplicates)
-      if (rows.length > 1) {
-        const rnd = 1 + Math.floor(Math.random() * (rows.length - 1))
-        const tmp = rows[0]
-        rows[0] = rows[rnd]
-        rows[rnd] = tmp
-      }
       setItems(rows)
-      // assign mock amounts (same logic as donations section)
-      const base = [4200, 3000, 1800, 900, 500]
       const m: Record<number, number> = {}
-      rows.slice(0, 5).forEach((p, i) => { m[p.id] = base[i] || 0 })
+      rows.forEach((p) => { m[p.id] = Number((p as any).donated_amount_usd || 0) })
       setAmountsById(m)
     } finally {
       setLoading(false)

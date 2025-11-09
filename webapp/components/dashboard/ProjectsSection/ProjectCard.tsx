@@ -64,8 +64,8 @@ export function ProjectCard({ p, currentWallet, earnedUsd = 0, onToggle, disable
              onClick={async () => {
                setWithdrawing(true)
                try {
-                 // mock withdraw for this project
-                 console.log("withdraw-project", { id: p.id, amount: earnedUsd })
+                await ProjectService.withdrawDonations(p.id, currentWallet!)
+                if (onChanged) await onChanged()
                } finally {
                  setWithdrawing(false)
                }
