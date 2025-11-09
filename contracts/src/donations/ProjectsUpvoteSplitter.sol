@@ -19,8 +19,11 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
         bool active;
     }
 
-    // Projects registry. The generated public getter matches (address, bool) tuple ABI.
-    Project[] public projects;
+    // Projects registry keyed by off-chain (Supabase) project id.
+    mapping(uint256 => Project) public projects;
+    // Track existence and preserve deterministic iteration order
+    mapping(uint256 => bool) public projectExists;
+    uint256[] public projectIds;
 
     // Current epoch index (starts at 0)
     uint256 public currentEpoch;
@@ -42,7 +45,14 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
      * @notice Number of registered projects.
      */
     function numProjects() external view returns (uint256) {
-        return projects.length;
+        return projectIds.length;
+    }
+
+    /**
+     * @notice Helper to read number of stored project ids (frontend iteration)
+     */
+    function projectIdsLength() external view returns (uint256) {
+        return projectIds.length;
     }
 
     /**
@@ -54,20 +64,21 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
 
     /**
      * @notice Register a new project. Only owner.
-     * @return id The id of the newly added project.
      */
-    function addProject(address recipient) external onlyOwner returns (uint256 id) {
+    function addProject(uint256 projectId, address recipient) external onlyOwner {
         require(recipient != address(0), "recipient=0");
-        id = projects.length;
-        projects.push(Project({recipient: recipient, active: true}));
-        emit ProjectAdded(id, recipient);
+        require(!projectExists[projectId], "exists");
+        projects[projectId] = Project({recipient: recipient, active: true});
+        projectExists[projectId] = true;
+        projectIds.push(projectId);
+        emit ProjectAdded(projectId, recipient);
     }
 
     /**
      * @notice Set a project's active flag. Only owner.
      */
     function setProjectActive(uint256 projectId, bool active) external onlyOwner {
-        require(projectId < projects.length, "bad id");
+        require(projectExists[projectId], "bad id");
         projects[projectId].active = active;
         emit ProjectActivationChanged(projectId, active);
     }
@@ -76,7 +87,7 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
      * @notice Upvote a project for the current epoch. Each wallet can upvote a given project once per epoch.
      */
     function upvote(uint256 projectId) external {
-        require(projectId < projects.length, "bad id");
+        require(projectExists[projectId], "bad id");
         require(projects[projectId].active, "inactive");
         uint256 epoch = currentEpoch;
         require(!hasVotedByEpoch[epoch][projectId][msg.sender], "already voted");
@@ -111,15 +122,16 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
         }
 
         uint256 epoch = currentEpoch;
-        uint256 projCount = projects.length;
+        uint256 projCount = projectIds.length;
 
         // Sum votes across active projects
         uint256 totalVotes = 0;
         uint256 lastActiveId = type(uint256).max;
         for (uint256 i = 0; i < projCount; i++) {
-            if (!projects[i].active) continue;
-            lastActiveId = i;
-            totalVotes += votesByEpoch[epoch][i];
+            uint256 pid = projectIds[i];
+            if (!projects[pid].active) continue;
+            lastActiveId = pid;
+            totalVotes += votesByEpoch[epoch][pid];
         }
 
         // Nothing to do if no active projects or no votes
@@ -130,12 +142,13 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
         // Allocate proportionally; give rounding remainder to the last active project
         uint256 remaining = balance;
         for (uint256 i = 0; i < projCount; i++) {
-            if (!projects[i].active) continue;
-            uint256 votes = votesByEpoch[epoch][i];
-            if (i == lastActiveId) {
+            uint256 pid = projectIds[i];
+            if (!projects[pid].active) continue;
+            uint256 votes = votesByEpoch[epoch][pid];
+            if (pid == lastActiveId) {
                 // send the remainder
                 if (remaining > 0) {
-                    erc20.safeTransfer(projects[i].recipient, remaining);
+                    erc20.safeTransfer(projects[pid].recipient, remaining);
                 }
                 break;
             }
@@ -145,7 +158,7 @@ contract ProjectsUpvoteSplitter is Ownable, ReentrancyGuard {
             uint256 amount = (balance * votes) / totalVotes;
             if (amount > 0) {
                 remaining -= amount;
-                erc20.safeTransfer(projects[i].recipient, amount);
+                erc20.safeTransfer(projects[pid].recipient, amount);
             }
         }
 

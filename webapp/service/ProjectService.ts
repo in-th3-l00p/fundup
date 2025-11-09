@@ -18,16 +18,22 @@ export type ProjectWithMeta = ProjectWithOwner & { upvotes_count: number; has_up
 export namespace ProjectService {
   export async function createProject(ownerWallet: string, name: string, description_md: string): Promise<Project> {
     const supabase = createClient()
-    // also register on-chain project in splitter (recipient = owner wallet)
-    // try owner fallback internally if connected wallet is not the splitter owner
-    await Web3.splitter.addProject(ownerWallet as Address)
+    // create in DB first to get project id
     const { data, error } = await supabase
       .from("projects")
       .insert({ owner_wallet_address: ownerWallet.toLowerCase(), name, description_md })
       .select()
       .single()
     if (error) throw error
-    return data as Project
+    const row = data as Project
+    // also register on-chain project in splitter with the same id (recipient = owner wallet)
+    // try owner fallback internally if connected wallet is not the splitter owner
+    try {
+      await Web3.splitter.addProject(row.id, ownerWallet as Address)
+    } catch {
+      // non-fatal for UI; on-chain registration best-effort
+    }
+    return row
   }
 
   export async function listProjects(query?: string, currentWallet?: string): Promise<ProjectWithMeta[]> {
@@ -98,21 +104,9 @@ export namespace ProjectService {
       .insert({ project_id: projectId, voter_wallet_address: voterWallet.toLowerCase() })
     // ignore duplicate upvotes (unique constraint)
     if (error && error.code !== "23505") throw error
-    // also upvote on-chain
+    // also upvote on-chain with project id
     try {
-      const { data: projRow } = await supabase
-        .from("projects")
-        .select("id, owner_wallet_address")
-        .eq("id", projectId)
-        .single()
-      const ownerAddr = (projRow?.owner_wallet_address || "").toLowerCase()
-      if (ownerAddr) {
-        const onchain = await Web3.splitter.listProjects()
-        const found = onchain.find((p) => p.recipient.toLowerCase() === ownerAddr)
-        if (found) {
-          await Web3.splitter.upvote(voterWallet as Address, BigInt(found.id))
-        }
-      }
+      await Web3.splitter.upvote(voterWallet as Address, BigInt(projectId))
     } catch {
       // non-fatal for UI; on-chain upvote best-effort
     }
@@ -144,19 +138,7 @@ export namespace ProjectService {
     const supabase = createClient()
     // set inactive on-chain if exists
     try {
-      const { data: projRow } = await supabase
-        .from("projects")
-        .select("id, owner_wallet_address")
-        .eq("id", projectId)
-        .single()
-      const ownerAddr = (projRow?.owner_wallet_address || "").toLowerCase()
-      if (ownerAddr) {
-        const onchain = await Web3.splitter.listProjects()
-        const found = onchain.find((p) => p.recipient.toLowerCase() === ownerAddr)
-        if (found) {
-          await Web3.splitter.setProjectActive(BigInt(found.id), false)
-        }
-      }
+      await Web3.splitter.setProjectActive(BigInt(projectId), false)
     } catch {
       // ignore on-chain errors here to allow DB delete
     }

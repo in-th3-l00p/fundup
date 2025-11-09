@@ -14,9 +14,11 @@ export const vaultAbi = [
 
 export const splitterAbi = [
   { type: "function", name: "numProjects", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "projectIdsLength", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "projectIds", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] },
   { type: "function", name: "projects", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "address" }, { type: "bool" }] },
   { type: "function", name: "currentVotes", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] },
-  { type: "function", name: "addProject", stateMutability: "nonpayable", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "addProject", stateMutability: "nonpayable", inputs: [{ type: "uint256" }, { type: "address" }], outputs: [] },
   { type: "function", name: "setProjectActive", stateMutability: "nonpayable", inputs: [{ type: "uint256" }, { type: "bool" }], outputs: [] },
   { type: "function", name: "upvote", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
   { type: "function", name: "advanceEpoch", stateMutability: "nonpayable", inputs: [], outputs: [] },

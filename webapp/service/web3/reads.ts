@@ -34,13 +34,14 @@ export async function getTotalDonatedUsdc(): Promise<bigint> {
 export async function listProjects(): Promise<Array<{ id: number; recipient: Address; active: boolean; votes: bigint }>> {
   if (!DONATION_SPLITTER) return []
   const pc = publicClient()
-  const n = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "numProjects" }) as bigint
+  const n = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "projectIdsLength" }) as bigint
   const out: Array<{ id: number; recipient: Address; active: boolean; votes: bigint }> = []
   const count = Number(n)
   for (let i = 0; i < count; i++) {
-    const proj = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "projects", args: [BigInt(i)] }) as readonly [Address, boolean]
-    const v = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "currentVotes", args: [BigInt(i)] }) as bigint
-    out.push({ id: i, recipient: proj[0], active: proj[1], votes: v })
+    const pid = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "projectIds", args: [BigInt(i)] }) as bigint
+    const proj = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "projects", args: [pid] }) as readonly [Address, boolean]
+    const v = await pc.readContract({ address: DONATION_SPLITTER, abi: splitterAbi, functionName: "currentVotes", args: [pid] }) as bigint
+    out.push({ id: Number(pid), recipient: proj[0], active: proj[1], votes: v })
   }
   return out
 }

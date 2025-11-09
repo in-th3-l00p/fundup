@@ -20,21 +20,21 @@ export async function distribute() {
   await pc.waitForTransactionReceipt({ hash })
 }
 
-export async function splitterAddProject(recipient: Address, by?: Address) {
+export async function splitterAddProject(projectId: number, recipient: Address, by?: Address) {
   if (!DONATION_SPLITTER) return
   const pc = publicClient()
   // try with connected wallet first (if available)
   try {
     const wc = await walletClient()
     const account = by ?? (await wc.getAddresses())[0]
-    const hash = await wc.writeContract({ account, address: DONATION_SPLITTER, abi: splitterAbi, functionName: "addProject", args: [recipient] })
+    const hash = await wc.writeContract({ account, address: DONATION_SPLITTER, abi: splitterAbi, functionName: "addProject", args: [BigInt(projectId), recipient] })
     await pc.waitForTransactionReceipt({ hash })
     return
   } catch {}
   // fallback to owner signer via env PK
   const owc = ownerWalletClient()
   const ownerAccount = (await owc.getAddresses())[0]
-  const hash = await owc.writeContract({ account: ownerAccount, address: DONATION_SPLITTER, abi: splitterAbi, functionName: "addProject", args: [recipient] })
+  const hash = await owc.writeContract({ account: ownerAccount, address: DONATION_SPLITTER, abi: splitterAbi, functionName: "addProject", args: [BigInt(projectId), recipient] })
   await pc.waitForTransactionReceipt({ hash })
 }
 
