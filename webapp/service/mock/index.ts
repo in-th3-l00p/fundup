@@ -15,8 +15,8 @@ function setLs(key: string, val: string) {
 }
 
 export function format(amount: bigint, decimals = DECIMALS): string {
-  const neg = amount < 0n
-  const n = neg ? -amount : amount
+  const neg = amount < BigInt(0)
+  const n = neg ? BigInt(-amount) : amount
   const s = n.toString().padStart(decimals + 1, "0")
   const int = s.slice(0, -decimals)
   const frac = s.slice(-decimals).replace(/0+$/, "")

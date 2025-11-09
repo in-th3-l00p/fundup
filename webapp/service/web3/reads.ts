@@ -26,7 +26,7 @@ export async function getUsdcBalance(user: Address): Promise<bigint> {
 }
 
 export async function getTotalDonatedUsdc(): Promise<bigint> {
-  if (!DONATION_SPLITTER) return 0n
+  if (!DONATION_SPLITTER) return BigInt(0)
   const pc = publicClient()
   return await pc.readContract({ address: USDC, abi: erc20Abi, functionName: "balanceOf", args: [DONATION_SPLITTER] })
 }
