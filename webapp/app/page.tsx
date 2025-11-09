@@ -5,6 +5,7 @@ import { useAccount } from "wagmi"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
+import Link from "next/link"
 
 export default function Home() {
   const { isConnected } = useAccount()
@@ -41,6 +42,9 @@ export default function Home() {
               )
             }}
           </ConnectButton.Custom>
+          <Link href="/about" className="text-sm text-black/70 underline underline-offset-4 hover:text-violet-900">
+            about
+          </Link>
         </div>
       </main>
     </div>

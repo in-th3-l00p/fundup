@@ -25,6 +25,8 @@ export default function DashboardPage() {
             <a href="#donations" className="hover:text-violet-900 transition-colors">donations</a>
             <div>✧</div>
             <a href="#projects" className="hover:text-violet-900 transition-colors">projects</a>
+            <div>✧</div>
+            <a href="/about" className="hover:text-violet-900 transition-colors">about</a>
           </div>
         </div>
         <ProfileSection />
