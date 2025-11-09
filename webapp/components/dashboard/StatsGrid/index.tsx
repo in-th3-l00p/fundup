@@ -126,8 +126,8 @@ export function StatsGrid() {
                   const key = `principal:${address.toLowerCase()}`
                   const principalStr = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
                   const principal = BigInt(principalStr)
-                  const yieldNow = dep > principal ? dep - principal : 0n
-                  if (yieldNow > 0n) {
+                  const yieldNow = dep > principal ? dep - principal : BigInt(0)
+                  if (yieldNow > BigInt(0)) {
                     // transfer yield to donation splitter and distribute
                     await Web3.transferUsdc(address!, Web3.addresses.donationSplitter, yieldNow)
                     await Web3.distribute()
