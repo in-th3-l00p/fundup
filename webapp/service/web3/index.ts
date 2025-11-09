@@ -3,7 +3,7 @@
 import type { Address } from "viem"
 import { addresses, DONATION_SPLITTER, TWYNE_VAULT, USDC } from "./addresses"
 import { getTokenDecimals, getUsdcDecimals, getTokenBalance, getUsdcBalance, getTotalDonatedUsdc, listProjects, getVaultShares, getVaultAssets } from "./reads"
-import { approveUsdcIfNeeded, depositToVault, distribute, transferUsdc } from "./writes"
+import { approveUsdcIfNeeded, depositToVault, distribute, transferUsdc, splitterAddProject, splitterSetProjectActive, splitterUpvote, splitterAdvanceEpoch } from "./writes"
 import { format, parse } from "./format"
 
 const erc20 = {
@@ -28,6 +28,10 @@ const splitter = {
   listProjects,
   distribute,
   getUsdcBalance: getTotalDonatedUsdc,
+  addProject: splitterAddProject,
+  setProjectActive: splitterSetProjectActive,
+  upvote: splitterUpvote,
+  advanceEpoch: splitterAdvanceEpoch,
 }
 
 export const Web3 = {
