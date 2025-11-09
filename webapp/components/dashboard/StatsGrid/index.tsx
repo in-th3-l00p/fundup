@@ -34,14 +34,14 @@ export function StatsGrid() {
 
   async function refresh() {
     try {
-      const d = await Web3.getUsdcDecimals()
+      const d = await Web3.usdc.getDecimals()
       setDecimals(d)
       // total donated = USDC balance held by donation splitter
-      const donated = await Web3.getTotalDonatedUsdc()
+      const donated = await Web3.splitter.getUsdcBalance()
       setTotalDonated(`$${toTwo(Web3.format(donated, d))}`)
       if (address) {
-        const bal = await Web3.getUsdcBalance(address)
-        const dep = await Web3.getVaultAssets(address)
+        const bal = await Web3.usdc.getBalance(address)
+        const dep = await Web3.vault.getAssets(address)
         setTokenBal(toTwo(Web3.format(bal, d)))
         setYourLocked(`${toTwo(Web3.format(dep, d))} USDC`)
         // your yield = current assets - principal (tracked in localStorage per address)
@@ -56,7 +56,7 @@ export function StatsGrid() {
         setYourYield("$0.00")
       }
       // refresh projects list for donation modal
-      const list = await Web3.listProjects()
+      const list = await Web3.splitter.listProjects()
       setProjects(list.filter(p => p.active))
     } catch {}
   }
@@ -121,16 +121,16 @@ export function StatsGrid() {
                 setDonating(true)
                 try {
                   // compute current yield in base units
-                  const d = await Web3.getUsdcDecimals()
-                  const dep = await Web3.getVaultAssets(address!)
+                  const d = await Web3.usdc.getDecimals()
+                  const dep = await Web3.vault.getAssets(address!)
                   const key = `principal:${address.toLowerCase()}`
                   const principalStr = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
                   const principal = BigInt(principalStr)
                   const yieldNow = dep > principal ? dep - principal : BigInt(0)
                   if (yieldNow > BigInt(0)) {
                     // transfer yield to donation splitter and distribute
-                    await Web3.transferUsdc(address!, Web3.addresses.donationSplitter, yieldNow)
-                    await Web3.distribute()
+                    await Web3.usdc.transfer(address!, Web3.addresses.donationSplitter, yieldNow)
+                    await Web3.splitter.distribute()
                     // reset principal to current assets after donating yield
                     if (typeof window !== "undefined") window.localStorage.setItem(key, dep.toString())
                   }
@@ -185,7 +185,7 @@ export function StatsGrid() {
                 setSubmitting(true)
                 try {
                   const parsed = Web3.parse(amount, decimals)
-                  await Web3.depositToVault(address, parsed)
+                  await Web3.vault.deposit(address, parsed)
                   // bump principal tracker
                   const key = `principal:${address.toLowerCase()}`
                   const prev = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
