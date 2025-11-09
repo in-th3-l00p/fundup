@@ -5,18 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { useAccount } from "wagmi"
 import { Web3 } from "@/service/web3"
-
-function Box({ value, label, className }: { value: string; label: string; className?: string }) {
-  return (
-    <div className={cn("rounded-xl border border-black/10 p-6 flex flex-col items-center justify-center text-center", className)}>
-      <div className="text-4xl font-semibold">{value}</div>
-      <div className="mt-2 text-sm text-black/70">{label}</div>
-    </div>
-  )
-}
+import { TotalDonated } from "./TotalDonated"
+import { YourYield } from "./YourYield"
+import { YourLocked } from "./YourLocked"
 
 export function StatsGrid() {
   const { address } = useAccount()
@@ -55,7 +48,7 @@ export function StatsGrid() {
         const key = `principal:${address.toLowerCase()}`
         const principalStr = typeof window !== "undefined" ? window.localStorage.getItem(key) || "0" : "0"
         const principal = BigInt(principalStr)
-        const yieldNow = dep > principal ? dep - principal : 0n
+        const yieldNow = dep > principal ? dep - principal : BigInt(0)
         setYourYield(`$${toTwo(Web3.format(yieldNow, d))}`)
       } else {
         setTokenBal("0.00")
@@ -78,9 +71,9 @@ export function StatsGrid() {
       <h2 className="text-lg font-medium">stats</h2>
 
       <div className="mt-4 grid grid-cols-3 grid-rows-[1fr_20px] gap-4">
-        <Box value={totalDonated} label="total donated yield" className="row-span-1 col-start-0 col-end-0" />
-        <Box value={yourYield} label="your yield" />
-        <Box value={yourLocked} label="your locked amount" />
+        <TotalDonated value={totalDonated} />
+        <YourYield value={yourYield} />
+        <YourLocked value={yourLocked} />
         <Button className="col-2" onClick={() => { setDonateOpen(true); refresh() }}>donate</Button>
         <Button onClick={() => { setOpen(true); refresh() }} className="col-3">
           deposit

@@ -1,0 +1,78 @@
+### fundup — cursor rules (high-signal project context)
+
+Project overview
+- Yield-donating app for Octant v2 + Twyne mock vaults.
+- Users deposit USDC to a vault (ERC-4626-like), keep principal; generated yield is donated to projects via a splitter.
+- Projects receive donations proportionally to upvotes (capital-weighted in final form; currently via votes count in splitter mock).
+
+Key contracts (deployed by scripts/devnet_up.sh)
+- USDC: MintableERC20 (6 decimals).
+- Twyne Vault: MockTwyneCreditVault (ERC-4626-like; accrueWithTime for APY simulation).
+- Donation Splitter: ProjectsUpvoteSplitter (register projects; reads votes; distribute(token)).
+- Strategy: TwyneYieldDonatingStrategy (Octant-style reporting).
+
+Frontend (Next.js + Wagmi + RainbowKit + viem)
+- Network: foundry (anvil) on chain id 31337; RPC from env `NEXT_PUBLIC_RPC_URL`.
+- Providers: see `webapp/components/providers.tsx`.
+- Web3 service: `webapp/service/web3/index.ts`.
+  - Reads: USDC balance/decimals, vault shares/assets, donation splitter balance, projects list (on-chain).
+  - Writes: approve, deposit, transfer to splitter, distribute, addProject (owner required).
+- Dashboard UI: `webapp/components/dashboard/StatsGrid.tsx`.
+  - Shows wallet USDC balance, locked amount (vault assets), total donated (splitter balance), your yield (assets − principal).
+  - Deposit modal: approve + deposit and refresh.
+  - Donate modal: lists on-chain projects with vote-weighted percentages; donates current yield and calls distribute; resets principal to current assets.
+
+Devnet and env
+- Start devnet + deploy + write .env: `bash ./scripts/devnet_up.sh`.
+- Script outputs:
+  - `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_CHAIN_ID`, contract addresses.
+  - `NEXT_PUBLIC_SPLITTER_OWNER_PK` (deployer; used as admin fallback for on-chain indexing).
+  - `TEST_WALLET{1..3}_ADDRESS`/`_PRIVATE_KEY` funded + minted USDC.
+- The script upserts variables into `webapp/.env` (does not overwrite other keys).
+
+Important invariants and gotchas
+- USDC uses 6 decimals. Always parse/format with 6 when moving between UI and chain.
+- When writing contracts with viem (`writeContract`), always pass `account` explicitly.
+- `addProject` on splitter is `onlyOwner`. Frontend tries connected wallet first (MetaMask prompt), then falls back to admin signer using `NEXT_PUBLIC_SPLITTER_OWNER_PK`.
+- Principal tracking is local (localStorage: `principal:<address>`). Yield = vault assets − principal.
+- Donate flow:
+  1) Compute yield (base units).
+  2) `transfer(USDC)` yield to splitter.
+  3) `splitter.distribute(USDC)` to route to active projects by vote weights.
+  4) Reset local principal to current assets.
+
+Common commands
+- Contracts: `cd contracts && forge build && forge test -vvv`.
+- APY sim (optional historical): `contracts/scripts/simulate_twyne_apy.sh`.
+- Frontend: `cd webapp && npm run dev` (ensure `.env` is set by devnet script).
+
+When adding/changing features
+- Prefer reading chain state with viem public client; avoid mixing stale wagmi core actions.
+- Respect 2 decimal place UI formatting for all monetary displays.
+- Keep env-driven addresses under `Web3.addresses` and never hardcode addresses in components.
+- Any new write function should:
+  - include `account` (connected wallet), 
+  - `await waitForTransactionReceipt`,
+  - refresh UI states afterward.
+
+Do
+- Keep donate modal source of truth on-chain (projects and votes).
+- Use admin fallback only if write with connected wallet fails (owner check).
+- Handle empty states (no projects, zero votes) gracefully.
+
+Don’t
+- Don’t overwrite `.env`; append/update keys via the script’s upsert.
+- Don’t assume 18 decimals for USDC or vault assets.
+- Don’t cache addresses or balances across network restarts without refresh.
+
+Key files map
+- Scripts: `scripts/devnet_up.sh`.
+- Services: `webapp/service/web3/index.ts`, `webapp/service/ProjectService.ts`.
+- UI: `webapp/components/dashboard/StatsGrid.tsx`.
+- Contracts (selected): 
+  - `contracts/src/twyne/mocks/MockTwyneCreditVault.sol`
+  - `contracts/src/donations/ProjectsUpvoteSplitter.sol`
+  - `contracts/src/strategy/TwyneYieldDonatingStrategy.sol`
+  - `contracts/src/mocks/MintableERC20.sol`
+
+
